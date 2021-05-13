@@ -15,9 +15,10 @@ from lab5.witcher import Witcher
 class Simulation:
 
     def __init__(self):
-        self.board = Board()
-        self.monster = Monster(Vec2D(7, 2), self.board, "DETERMINISTIC")
-        self.witcher = Witcher(Vec2D(3, 3), self.board, self.monster, cautious=0.9)
+        self.board = Board(upper_right=Vec2D(10, 9))
+        self.monster = Monster(Vec2D(7, 2), self.board, "STOCHASTIC")
+        self.witcher = Witcher(Vec2D(3, 3), self.board, self.monster,
+                               gamma=0.9, alpha=0.1, cautious=0.9, is_sarsa=False)
         self.board.add_entity(self.monster)
         self.board.add_entity(self.witcher)
         self.history = []
@@ -35,7 +36,7 @@ class Simulation:
         self.ys = [[] for _ in range(self.PLOTS_NO)]
         self.lines = [self.axes[i].plot([], [], 'r')[0] for i in range(self.PLOTS_NO)]
         self.ITERS = 20000
-        self.AVG_WINDOW = 100
+        self.AVG_WINDOW = 150
 
         ani = FuncAnimation(self.fig, self.update, frames=self.ITERS, init_func=self.init, blit=True, interval=0)
         mng = plt.get_current_fig_manager()
@@ -60,8 +61,8 @@ class Simulation:
         for i in range(self.PLOTS_NO):
             self.axes[i].set_xlim(1, self.ITERS)
 
-        starts = [0, 0, -100, 0]
-        limits = [200, 4, 100, 1]
+        starts = [0, -60, 0, 0]
+        limits = [300, 100, 4, 1]
         for i in range(self.PLOTS_NO):
             self.axes[i].set_ylim(starts[i], limits[i])
 
@@ -75,7 +76,7 @@ class Simulation:
         while not self.board.finished:
             state, action = self.simulation_step(state, action, frame, show=show)
 
-        if frame % 1000 == 0:
+        if frame % 1000 == 0 or (frame < 100 and frame % 10 == 0):
             self.witcher.save_move_heatmap(f'moves/{os.sep}heatmap_{frame}')
 
         self.board.reset_state(self.board.loser)

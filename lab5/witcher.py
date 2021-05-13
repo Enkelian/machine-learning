@@ -8,18 +8,19 @@ import numpy as np
 import seaborn as sns
 import matplotlib.pyplot as plt
 
+
 class Witcher(Entity):
     type = "W"
     history = {
         'iterations': [],
-        'hits': [],
         'rewards': [],
+        'hits': [],
         'success_probability': []
     }
     success_sum = 0
     game_no = 0
 
-    def __init__(self, starting_position, board, monster, gamma=0.9, alpha=0.1, cautious=0.3):
+    def __init__(self, starting_position, board, monster, gamma=0.9, alpha=0.1, cautious=0.3, is_sarsa=True):
         super(Witcher, self).__init__(starting_position, board)
         self.possible_moves = {
             Action.RIGHT: Vec2D(1, 0),
@@ -33,9 +34,10 @@ class Witcher(Entity):
         self.gamma = gamma
         self.alpha = alpha
         self.cautious = cautious
-        self.moves_heat = np.zeros((self.board.upper_right.x, self.board.upper_right.y))
+        self.moves_heat = np.zeros((self.board.upper_right.x - 1, self.board.upper_right.y - 1))
         self.distance = self.get_distance_to(monster)
         self.move_reward = 0
+        self.is_sarsa = is_sarsa
 
     def perform_attack(self):
         attack = []
@@ -46,11 +48,11 @@ class Witcher(Entity):
         self.board.attack_fields(attack)
 
     def move(self, vec):
-        self.moves_heat[super(Witcher, self).move(vec).to_tuple()] += 1
+        self.moves_heat[(super(Witcher, self).move(vec) - Vec2D(1, 1)).to_tuple()] += 1
         prev_dist = self.distance
         self.distance = self.get_distance_to(self.monster)
         diff = prev_dist - self.distance
-        self.move_reward += 2/diff if diff != 0 else 0
+        self.move_reward += diff/10
 
     def action(self):
         self.move_reward = 0
@@ -88,12 +90,16 @@ class Witcher(Entity):
         Witcher.history['rewards'].append(self.reward_sum)
         Witcher.success_sum += won
         Witcher.game_no += 1
-        Witcher.history['success_probability'].append(Witcher.success_sum/Witcher.game_no)
+        Witcher.history['success_probability'].append(Witcher.success_sum / Witcher.game_no)
 
     def update_Q(self, state1, action1, reward1, state2, action2):
         self.reward_sum += reward1
-        self.Q[state1][action1.value] += \
-            self.alpha * (reward1 + self.gamma * self.Q[state2][action2.value] - self.Q[state1][action1.value])
+        if self.is_sarsa:
+            self.Q[state1][action1.value] += \
+                self.alpha * (reward1 + self.gamma * self.Q[state2][action2.value] - self.Q[state1][action1.value])
+        else:
+            self.Q[state1][action1.value] += \
+                self.alpha * (reward1 + self.gamma * np.max(self.Q[state2]) - self.Q[state1][action1.value])
 
     def get_most_visited(self):
         np.max(self.moves_heat)
