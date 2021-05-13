@@ -7,9 +7,8 @@ MAX_ITERS = 1000
 
 
 class Board:
-    def __init__(self, upper_right=Vec2D(8, 7), lower_left=Vec2D(0, 0)):
+    def __init__(self, upper_right=Vec2D(8, 7)):
         self.upper_right = upper_right
-        self.lower_left = lower_left
         self.walls = [upper_right]
         self.entities = []
         self.attacked_fields = []
@@ -24,12 +23,12 @@ class Board:
                 if i != 1 or j != 1:
                     self.walls.append(upper_right - Vec2D(i, j))
 
-        for i in range(lower_left.x, upper_right.x + 1):
-            self.walls.append(Vec2D(i, lower_left.y))
+        for i in range(upper_right.x + 1):
+            self.walls.append(Vec2D(i, 0))
             self.walls.append(Vec2D(i, upper_right.y))
 
-        for i in range(lower_left.y, upper_right.y + 1):
-            self.walls.append(Vec2D(lower_left.x, i))
+        for i in range(upper_right.y + 1):
+            self.walls.append(Vec2D(0, i))
             self.walls.append(Vec2D(upper_right.x, i))
 
     def count_walls_in_dir(self, pos, direction):
@@ -101,6 +100,8 @@ class Board:
         if self.iteration == MAX_ITERS:
             reward += self.get_entity_of_type("W").get_hit()
 
+        reward += self.get_entity_of_type("W").move_reward
+
         self.iteration += 1
         self.clear_attacked_fields()
         self.check_if_ended(visible)
@@ -142,10 +143,3 @@ class Board:
 
     def get_size(self):
         return self.upper_right.x * self.upper_right.y
-
-    def get_empty_fields_dict(self):
-        fields = {}
-        for x in range(1, self.upper_right.x):
-            for y in range(1, self.lower_left.y):
-                fields[Vec2D(x, y)] = 0
-

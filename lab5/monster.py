@@ -45,7 +45,6 @@ class Monster(Entity):
         self.board.attack_fields(attack)
 
     def action(self):
-
         if self.idle:
             self.cooldown_count -= 1
             self.activate_if_possible()

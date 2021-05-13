@@ -34,6 +34,8 @@ class Witcher(Entity):
         self.alpha = alpha
         self.cautious = cautious
         self.moves_heat = np.zeros((self.board.upper_right.x, self.board.upper_right.y))
+        self.distance = self.get_distance_to(monster)
+        self.move_reward = 0
 
     def perform_attack(self):
         attack = []
@@ -45,8 +47,13 @@ class Witcher(Entity):
 
     def move(self, vec):
         self.moves_heat[super(Witcher, self).move(vec).to_tuple()] += 1
+        prev_dist = self.distance
+        self.distance = self.get_distance_to(self.monster)
+        diff = prev_dist - self.distance
+        self.move_reward += 2/diff if diff != 0 else 0
 
     def action(self):
+        self.move_reward = 0
         actions = list(Action)
         next_action = self.get_action((self.position, self.monster.position))
         if next_action == Action.ATTACK:
@@ -68,11 +75,12 @@ class Witcher(Entity):
 
     def finish(self, loser):
         self.add_history_entry(loser != self.type)
-        # self.show_move_heatmap()
         self.position = self.starting_position
         self.alive = True
-        self.moves_heat = np.zeros((self.board.upper_right.x, self.board.upper_right.y))
+        # self.moves_heat = np.zeros((self.board.upper_right.x, self.board.upper_right.y))
         self.reward_sum = 0
+        self.move_reward = 0
+        self.distance = 0
 
     def add_history_entry(self, won):
         Witcher.history['iterations'].append(self.board.iteration)
@@ -90,7 +98,7 @@ class Witcher(Entity):
     def get_most_visited(self):
         np.max(self.moves_heat)
 
-    def show_move_heatmap(self, name):
+    def save_move_heatmap(self, name):
         fig = plt.figure(2)
         fig.clf()
         svm = sns.heatmap(self.moves_heat, vmax=self.get_most_visited())
