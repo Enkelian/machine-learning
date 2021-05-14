@@ -58,7 +58,7 @@ class Monster(Entity):
                 self.perform_attack()
                 self.action_counter = 0
         else:
-            if random.random() > 0.1:
+            if random.random() > 0.33:
                 self.stochastic_move()
             else:
                 self.perform_attack()

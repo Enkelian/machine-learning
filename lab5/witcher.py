@@ -79,7 +79,7 @@ class Witcher(Entity):
         self.add_history_entry(loser != self.type)
         self.position = self.starting_position
         self.alive = True
-        # self.moves_heat = np.zeros((self.board.upper_right.x, self.board.upper_right.y))
+        self.moves_heat = np.zeros((self.board.upper_right.x, self.board.upper_right.y))
         self.reward_sum = 0
         self.move_reward = 0
         self.distance = 0

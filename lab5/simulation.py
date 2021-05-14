@@ -11,14 +11,52 @@ from lab5.monster import Monster
 from lab5.vec2D import Vec2D
 from lab5.witcher import Witcher
 
-
+modes = {
+    'det': {    #in Q-learning gives 0.99 success probability for deterministic
+        'g': 0.9,
+        'a': 1,
+        'c': 1
+    },
+    'cat': {    #in sarsa 0.96 success probability for stochastic
+        'g': 0.9,
+        'a': 0.1,
+        'c': 0.99
+    },
+    'exp': {  # reached 0.9 in Q learning stochastic, 0.88 in sarsa
+        'g': 0.7,
+        'a': 0.5,
+        'c': 0.95
+    },
+    'cat2': {   #in sarsa 0.94 success probability for stochastic
+        'g': 0.9,
+        'a': 0.01,
+        'c': 0.99
+    },
+    'exp2': {    #sarsa 0.86 and slowly increasing,
+        'g': 0.1,
+        'a': 0.9,
+        'c': 0.98
+    },
+    'exp3': {   #sarsa
+        'g': 0.2,
+        'a': 0.5,
+        'c': 0.95
+    },
+    'exp4': {
+        'g': 0.4,
+        'a': 0.5,
+        'c': 0.95
+    }
+}
+m = 'exp'
+is_sarsa = False
+monster_mode = "STOCHASTIC"
 class Simulation:
-
     def __init__(self):
         self.board = Board(upper_right=Vec2D(10, 9))
-        self.monster = Monster(Vec2D(7, 2), self.board, "STOCHASTIC")
+        self.monster = Monster(Vec2D(7, 5), self.board, monster_mode)
         self.witcher = Witcher(Vec2D(3, 3), self.board, self.monster,
-                               gamma=0.9, alpha=0.1, cautious=0.9, is_sarsa=False)
+                               gamma=modes[m]['g'], alpha=modes[m]['a'], cautious=modes[m]['c'], is_sarsa=is_sarsa)
         self.board.add_entity(self.monster)
         self.board.add_entity(self.witcher)
         self.history = []
@@ -31,12 +69,15 @@ class Simulation:
         for i in range(self.PLOTS_NO):
             self.axes.append(self.fig.add_subplot(spec[i, 0]))
             self.axes[i].title.set_text(list(Witcher.history.keys())[i])
+        self.fig.suptitle(f'gamma={modes[m]["g"]}, alpha={modes[m]["a"]}, cautious={modes[m]["c"]}, is_sarsa={is_sarsa}', fontsize=16)
 
         self.xs = [[] for _ in range(self.PLOTS_NO)]
         self.ys = [[] for _ in range(self.PLOTS_NO)]
         self.lines = [self.axes[i].plot([], [], 'r')[0] for i in range(self.PLOTS_NO)]
-        self.ITERS = 20000
-        self.AVG_WINDOW = 150
+        self.ITERS = 4000
+        self.AVG_WINDOW = 50
+        self.SHOW_LAST = 5
+        self.SAVE = 50
 
         ani = FuncAnimation(self.fig, self.update, frames=self.ITERS, init_func=self.init, blit=True, interval=0)
         mng = plt.get_current_fig_manager()
@@ -70,14 +111,17 @@ class Simulation:
 
     def update(self, frame):
 
-        show = frame > 19000
+        show = frame > self.ITERS - self.SHOW_LAST
         state = self.board.state
         action = self.witcher.get_action(state)
         while not self.board.finished:
             state, action = self.simulation_step(state, action, frame, show=show)
 
-        if frame % 1000 == 0 or (frame < 100 and frame % 10 == 0):
-            self.witcher.save_move_heatmap(f'moves/{os.sep}heatmap_{frame}')
+        if frame == self.ITERS - self.SAVE:
+            self.fig.savefig(f'stats{os.sep}is_sarsa_{is_sarsa}_monster_mode_{monster_mode}_mode_{m}')
+
+        if frame % 500 == 0 or (frame < 100 and frame % 10 == 0):
+            self.witcher.save_move_heatmap(f'moves{os.sep}heatmap_is_sarsa_{is_sarsa}_monster_mode_{monster_mode}_mode_{m}_frame_{frame}')
 
         self.board.reset_state(self.board.loser)
 
