@@ -48,9 +48,9 @@ modes = {
         'c': 0.95
     }
 }
-m = 'exp'
+m = 'det'
 is_sarsa = False
-monster_mode = "STOCHASTIC"
+monster_mode = "DETERMINISTIC"
 class Simulation:
     def __init__(self):
         self.board = Board(upper_right=Vec2D(10, 9))
